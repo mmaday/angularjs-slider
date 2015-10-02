@@ -104,8 +104,14 @@ rzslider span.rz-pointer:after {
   background: @handleInnerColor;
 }
 
-rzslider span.rz-pointer:hover:after {
-  background-color: @handleHoverColor;
+rzslider span.rz-pointer {
+  &:hover:after, &:focus:after {
+    background-color: @handleHoverColor;
+  }
+  &:focus {
+    outline: 2px auto;
+    outline-offset: -2px;
+  }
 }
 
 rzslider span.rz-pointer.rz-active:after {

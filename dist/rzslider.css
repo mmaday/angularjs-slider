@@ -86,8 +86,14 @@ rzslider span.rz-pointer:after {
   content: '';
 }
 
-rzslider span.rz-pointer:hover:after {
+rzslider span.rz-pointer:hover:after,
+rzslider span.rz-pointer:focus:after {
   background-color: #ffffff;
+}
+
+rzslider span.rz-pointer:focus {
+  outline: 2px auto;
+  outline-offset: -2px;
 }
 
 rzslider span.rz-pointer.rz-active:after {

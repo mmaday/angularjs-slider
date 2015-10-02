@@ -43,7 +43,6 @@ var module = angular.module('rzModule', [])
    * @returns {Function}
    */
 function throttle(func, wait, options) {
-  'use strict';
   var getTime = (Date.now || function() {
     return new Date().getTime();
   });
@@ -76,9 +75,20 @@ function throttle(func, wait, options) {
   };
 })
 
-.factory('RzSlider', ['$timeout', '$document', '$window', 'throttle', function($timeout, $document, $window, throttle)
+.value('KEY_CODE',  {
+      PAGE_UP: 33,
+      PAGE_DOWN: 34,
+      END: 35,
+      HOME: 36,
+      LEFT_ARROW : 37,
+      UP_ARROW : 38,
+      RIGHT_ARROW : 39,
+      DOWN_ARROW : 40,
+    }
+)
+
+.factory('RzSlider', ['$timeout', '$document', '$window', 'throttle', 'KEY_CODE', function($timeout, $document, $window, throttle, KEY_CODE)
 {
-  'use strict';
 
   /**
    * Slider
@@ -498,6 +508,16 @@ function throttle(func, wait, options) {
       }
 
       this.valueRange = this.maxValue - this.minValue;
+
+      if (!this.range) {
+        // set aria min/max
+        this.minH.attr('aria-valuemin', this.minValue);
+        this.minH.attr('aria-valuemax', this.maxValue);
+
+        // set the aria role to slider
+        this.minH.attr('role', 'slider');
+      }
+
     },
 
     /**
@@ -754,6 +774,11 @@ function throttle(func, wait, options) {
       this.setLeft(this.minLab, newOffset - this.minLab.rzsw / 2 + this.handleHalfWidth);
 
       this.shFloorCeil();
+
+      // update aria value if not in range mode
+      if (!this.range) {
+        this.minH.attr('aria-valuenow', this.scope.rzSliderModel);
+      }
     },
 
     /**
@@ -834,6 +859,8 @@ function throttle(func, wait, options) {
     {
       this.setWidth(this.selBar, Math.abs(this.maxH.rzsl - this.minH.rzsl));
       this.setLeft(this.selBar, this.range ? this.minH.rzsl + this.handleHalfWidth : 0);
+      // set aria min/max
+      // this.sliderElem.attr('aria-valuenow', this.minValue);
     },
 
     /**
@@ -1050,6 +1077,14 @@ function throttle(func, wait, options) {
       this.selBar.on('touchstart', angular.bind(this, barMove, this.selBar));
       this.ticks.on('touchstart', angular.bind(this, this.onStart, null, null));
       this.ticks.on('touchstart', angular.bind(this, this.onMove, this.ticks));
+
+      // bind keyboard events (adding tabindex if necessary) if not in range mode
+      if(!this.range) {
+        if (!this.minH[0].hasAttribute('tabindex')) {
+          this.minH.attr('tabindex', 0);
+        }
+        this.minH.on('keydown', angular.bind(this, this.onKeyDown, 'rzSliderModel'));
+      }
     },
 
     /**
@@ -1202,6 +1237,53 @@ function throttle(func, wait, options) {
     },
 
     /**
+     * onKeyDown event handler
+     *
+     * Handles dragging of the middle bar.
+     *
+     * @param {string} ref     One of the refLow, refHigh values
+     * @param {Event}  event   The event
+     * @returns {undefined}
+     */
+    onKeyDown: function(ref, event)
+    {
+      if (this.sliderElem[0].hasAttribute('disabled')) {
+        return;
+      }
+      // console.log('onKeyDown', ref, event);
+      var changeAmount,
+        self = this;
+
+      switch (event.keyCode) {
+        case KEY_CODE.LEFT_ARROW:
+          changeAmount = -this.step; break;
+        case KEY_CODE.RIGHT_ARROW:
+          changeAmount = this.step; break;
+        case KEY_CODE.PAGE_UP:
+          changeAmount = -this.step * 4; break;
+        case KEY_CODE.PAGE_DOWN:
+          changeAmount = this.step * 4; break;
+        case KEY_CODE.HOME:
+          changeAmount = -this.maxValue; break;
+        case  KEY_CODE.END:
+          changeAmount = this.maxValue; break;
+      }
+
+      if (changeAmount) {
+        if (event.metaKey || event.ctrlKey || event.altKey) {
+          changeAmount *= 4;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+
+        this.scope.$evalAsync(function() {
+          var newValue = Math.min(self.maxValue, Math.max(self.minValue, self.scope[ref] + changeAmount));
+          self.scope[ref] = newValue;
+        });
+      }
+    },
+
+    /**
      * Set the new value and offset for the entire bar
      *
      * @param {number} newMinValue   the new minimum value
@@ -1317,7 +1399,6 @@ function throttle(func, wait, options) {
 
 .directive('rzslider', ['RzSlider', function(RzSlider)
 {
-  'use strict';
 
   return {
     restrict: 'E',
@@ -1401,5 +1482,5 @@ function throttle(func, wait, options) {
 
 }]);
 
-  return module
+  return module;
 }));
