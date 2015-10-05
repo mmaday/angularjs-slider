@@ -1079,7 +1079,7 @@ function throttle(func, wait, options) {
       this.ticks.on('touchstart', angular.bind(this, this.onMove, this.ticks));
 
       // bind keyboard events (adding tabindex if necessary) if not in range mode
-      if(!this.range) {
+      if(!this.presentOnly && !this.range) {
         if (!this.minH[0].hasAttribute('tabindex')) {
           this.minH.attr('tabindex', 0);
         }
@@ -1277,7 +1277,8 @@ function throttle(func, wait, options) {
         event.stopPropagation();
 
         this.scope.$evalAsync(function() {
-          var newValue = Math.min(self.maxValue, Math.max(self.minValue, self.scope[ref] + changeAmount));
+          var currValue = parseInt(self.scope[ref], 10) || 0,
+              newValue = Math.min(self.maxValue, Math.max(self.minValue, currValue + changeAmount));
           self.scope[ref] = newValue;
         });
       }
